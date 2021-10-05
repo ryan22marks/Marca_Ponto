@@ -1,0 +1,69 @@
+
+var timeZone="GMT-3";//horario de brasilia
+var dateFormat="dd/MM/yyyy";//formato de data que sera exibido
+var timeFormat="HH:mm:ss";//formato de hora que sera exibido
+var logSpreadSheetId="1RpEZcICJKk_vHzZlSYvmYZL9cePc1xZ8HAoriR5E0j0";//link da planilha no google Sheets
+var emailAddress= "example@gmail.com";//email que recebe os dados de registro
+
+//-------------------- Função que envia o email
+function sendEmail(message, id) {
+  var subject = 'Something wrong with ' + id;
+  MailApp.sendEmail(emailAddress, subject, message);
+}
+
+function doGet(e) {
+  var json;
+  var error="idk";
+  Logger.log(JSON.stringify(e)); // view parameters
+  var result = 'Ok'; // assume success
+  if (e.parameter == 'undefined') {
+      result = 'No Parameters';
+  } else {
+    var uid = '';
+    var onlyPing=false;
+    var id = 'NOME DO FUNCIONARIO/EMPRESA';//troque pelo nome que deseja atribuir aos registros de dados
+    var error = '';
+    for (var param in e.parameter) {
+      var value = stripQuotes(e.parameter[param]);
+      switch (param) {
+          case 'uid':
+            uid = value;
+            break;
+          case 'id':
+            id = value;
+            break;
+          default:
+            result = "unsupported parameter";
+      }
+    }
+      
+    var sheet=SpreadsheetApp.getActive().getActiveSheet(); 
+    var data = sheet.getDataRange().getValues();
+    if (data.length == 0)    return;
+    addLog(uid);  
+  }
+  result="Recebido!!";//mensagem de retorno se o valor foi recebido
+  return ContentService.createTextOutput(result);
+}
+
+
+function addLog(uid) {
+  var spr=SpreadsheetApp.openById(logSpreadSheetId);//abre a planilha com a chave dada
+  var sheet = spr.getSheets()[0];//pega a primeira aba da planilha
+  var data = sheet.getDataRange().getValues();//
+  var pos = sheet.getLastRow() + 1;
+
+  var rowData = [];//vetor que guarda as informaçoes que irao para a planilha
+  rowData[0] = Utilities.formatDate(new Date(), timeZone, dateFormat);//coluna 1: data
+  rowData[1] = Utilities.formatDate(new Date(), timeZone, timeFormat);//coluna2: hora
+  rowData[2] = uid;//coluna 3: ID do cartao lido
+  var newRange = sheet.getRange(pos, 1, 1, rowData.length);//laço que percorre as linhas das colunas
+  newRange.setValues([rowData]);//envia as informaçoes para a planilha
+}
+
+
+
+/** Remove leading and trailing single or double quotes */
+function stripQuotes(value) {
+  return value.replace(/^["']|['"]$/g, "");
+}
